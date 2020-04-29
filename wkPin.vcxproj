@@ -46,7 +46,8 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PostBuildEvent>
-      <Command>copy /y $(OutDir)$(TargetName)$(TargetExt) "c:\Games\Worms Armageddon"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <ClCompile>
       <DebugInformationFormat>None</DebugInformationFormat>
@@ -84,7 +85,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PostBuildEvent>
-      <Command>copy /y $(OutDir)$(TargetName)$(TargetExt) "c:\Games\Worms Armageddon"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <Link>
       <AssemblyDebug>true</AssemblyDebug>

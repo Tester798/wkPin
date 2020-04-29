@@ -43,42 +43,42 @@ bool* window_show_addr_old;
 
 long GetFileSize(std::string filename)
 {
-	struct stat stat_buf;
-	int rc = stat(filename.c_str(), &stat_buf);
-	return rc == 0 ? stat_buf.st_size : -1;
+    struct stat stat_buf;
+    int rc = stat(filename.c_str(), &stat_buf);
+    return rc == 0 ? stat_buf.st_size : -1;
 }
 
 
 BOOL CheckWAVer(void)
 {
-	char WApath[MAX_PATH];
-	DWORD h;
-	GetModuleFileName(0, WApath, MAX_PATH);
-	DWORD Size = GetFileVersionInfoSize(WApath, &h);
-	if (Size)
-	{
-		void* Buf = malloc(Size);
+    char WApath[MAX_PATH];
+    DWORD h;
+    GetModuleFileName(0, WApath, MAX_PATH);
+    DWORD Size = GetFileVersionInfoSize(WApath, &h);
+    if (Size)
+    {
+        void* Buf = malloc(Size);
         if (Buf == NULL) {
             std::cout << "Can not allocate memory" << std::endl;
             return 0;
         }
-		GetFileVersionInfo(WApath, 0, Size, Buf);
-		VS_FIXEDFILEINFO* Info;
-		DWORD Is;
-		if (VerQueryValue(Buf, "\\", (LPVOID*)&Info, (PUINT)&Is))
-		{
-			if (Info->dwSignature == 0xFEEF04BD)
-			{
-				if (HIWORD(Info->dwFileVersionMS) == VV1
-					&& LOWORD(Info->dwFileVersionMS) == VV2
-					&& HIWORD(Info->dwFileVersionLS) == VV3
-					&& LOWORD(Info->dwFileVersionLS) == VV4
+        GetFileVersionInfo(WApath, 0, Size, Buf);
+        VS_FIXEDFILEINFO* Info;
+        DWORD Is;
+        if (VerQueryValue(Buf, "\\", (LPVOID*)&Info, (PUINT)&Is))
+        {
+            if (Info->dwSignature == 0xFEEF04BD)
+            {
+                if (HIWORD(Info->dwFileVersionMS) == VV1
+                    && LOWORD(Info->dwFileVersionMS) == VV2
+                    && HIWORD(Info->dwFileVersionLS) == VV3
+                    && LOWORD(Info->dwFileVersionLS) == VV4
                     )
-					return 1;
-			}
-		}
-	}
-	return 0;
+                    return 1;
+            }
+        }
+    }
+    return 0;
 }
 
 
@@ -484,63 +484,63 @@ BOOL WINAPI ThreadLoop(HMODULE hModule)
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
-	if (ul_reason_for_call == DLL_PROCESS_ATTACH)
-	{
+    if (ul_reason_for_call == DLL_PROCESS_ATTACH)
+    {
 
 #if _DEBUG
-		AllocConsole();
-		FILE* f;
+        AllocConsole();
+        FILE* f;
         std::string console_name = DLL_NAME;
         console_name += " console window";
-		freopen_s(&f, "CONOUT$", "w", stdout);
-		SetConsoleTitle(console_name.c_str());
-		system("cls");
-		std::cout << "Started" << std::endl;
-#endif	
+        freopen_s(&f, "CONOUT$", "w", stdout);
+        SetConsoleTitle(console_name.c_str());
+        system("cls");
+        std::cout << "Started" << std::endl;
+#endif
 
-		char currentDir[MAX_PATH];
-		char iniFile[MAX_PATH];
-		char* pos;
+        char currentDir[MAX_PATH];
+        char iniFile[MAX_PATH];
+        char* pos;
 
-		GetModuleFileName(GetModuleHandle(NULL), currentDir, MAX_PATH);
+        GetModuleFileName(GetModuleHandle(NULL), currentDir, MAX_PATH);
 
-		if (!CheckWAVer())
-		{
+        if (!CheckWAVer())
+        {
 #if _DEBUG
             MessageBox(0, WRONG_VERSION_MESSAGE, DLL_NAME, MB_OK | MB_ICONERROR);
 #endif
             return 1;
-		}
+        }
         long exe_file_size = GetFileSize(currentDir);
-		if (exe_file_size != WA_FILE_SIZE && exe_file_size != WA_FILE_SIZE_STEAM)
-		{
+        if (exe_file_size != WA_FILE_SIZE && exe_file_size != WA_FILE_SIZE_STEAM)
+        {
 #if _DEBUG
             MessageBox(0, WRONG_FILE_SIZE_MESSAGE, DLL_NAME, MB_OK | MB_ICONERROR);
 #endif
-			return 1;
-		}
+            return 1;
+        }
         if (exe_file_size == WA_FILE_SIZE_STEAM) {
             is_STEAM_exe = true;
         }
 
-		GetModuleFileName(GetModuleHandle(DLL_NAME), currentDir, MAX_PATH);
-		pos = strrchr(currentDir, '.');
+        GetModuleFileName(GetModuleHandle(DLL_NAME), currentDir, MAX_PATH);
+        pos = strrchr(currentDir, '.');
         strcpy(pos, "");
-		strcpy(iniFile, currentDir);
-		strcat(iniFile, ".ini");
+        strcpy(iniFile, currentDir);
+        strcat(iniFile, ".ini");
 
-		GetPrivateProfileString("Settings", "SyncPinnedAndOpenedLines", "1", SyncPinnedAndOpenedLines, 2, iniFile);
-		GetPrivateProfileString("Settings", "PinWeaponMenuEnable", "1", PinWeaponMenuEnable, 2, iniFile);
-		GetPrivateProfileString("Settings", "PinWeaponMenuAtStart", "0", PinWeaponMenuAtStart, 2, iniFile);
+        GetPrivateProfileString("Settings", "SyncPinnedAndOpenedLines", "1", SyncPinnedAndOpenedLines, 2, iniFile);
+        GetPrivateProfileString("Settings", "PinWeaponMenuEnable", "1", PinWeaponMenuEnable, 2, iniFile);
+        GetPrivateProfileString("Settings", "PinWeaponMenuAtStart", "0", PinWeaponMenuAtStart, 2, iniFile);
         GetPrivateProfileString("Settings", "PinWeaponMenuDoNotDim", "0", PinWeaponMenuDoNotDim, 2, iniFile);
 
-		if (GetFileAttributesA(iniFile) == INVALID_FILE_ATTRIBUTES)
-		{
-			WritePrivateProfileString("Settings", "SyncPinnedAndOpenedLines", SyncPinnedAndOpenedLines, iniFile);
-			WritePrivateProfileString("Settings", "PinWeaponMenuEnable", PinWeaponMenuEnable, iniFile);
-			WritePrivateProfileString("Settings", "PinWeaponMenuAtStart", PinWeaponMenuAtStart, iniFile);
+        if (GetFileAttributesA(iniFile) == INVALID_FILE_ATTRIBUTES)
+        {
+            WritePrivateProfileString("Settings", "SyncPinnedAndOpenedLines", SyncPinnedAndOpenedLines, iniFile);
+            WritePrivateProfileString("Settings", "PinWeaponMenuEnable", PinWeaponMenuEnable, iniFile);
+            WritePrivateProfileString("Settings", "PinWeaponMenuAtStart", PinWeaponMenuAtStart, iniFile);
             WritePrivateProfileString("Settings", "PinWeaponMenuDoNotDim", PinWeaponMenuDoNotDim, iniFile);
-		}
+        }
 
 
         // fixing WA bug with resetting pinned chat lines if number of pinned lines is 1
@@ -569,24 +569,24 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         }
 
 
-		if (SyncPinnedAndOpenedLines[0] == '1') {
-			if (is_STEAM_exe ? verify_patches(patch_2_syncronize_pinned_chat_STEAM, false) : verify_patches(patch_2_syncronize_pinned_chat, false))
-			{
+        if (SyncPinnedAndOpenedLines[0] == '1') {
+            if (is_STEAM_exe ? verify_patches(patch_2_syncronize_pinned_chat_STEAM, false) : verify_patches(patch_2_syncronize_pinned_chat, false))
+            {
 #if _DEBUG
                 std::cout << "Bytes for 'SyncPinnedAndOpenedLines' found, applying patch" << std::endl;
 #endif
 
                 is_STEAM_exe ? apply_patches(patch_2_syncronize_pinned_chat_STEAM, false) : apply_patches(patch_2_syncronize_pinned_chat, false);
-			}
-			else {
-				std::cout << "Cannot find original bytes for 'SyncPinnedAndOpenedLines'" << std::endl;
-			}
-		}
+            }
+            else {
+                std::cout << "Cannot find original bytes for 'SyncPinnedAndOpenedLines'" << std::endl;
+            }
+        }
 
         if (PinWeaponMenuEnable[0] == '1') {
-			CreateThread(0, 0, (LPTHREAD_START_ROUTINE)ThreadLoop, 0, 0, 0);
-		}
-	}
+            CreateThread(0, 0, (LPTHREAD_START_ROUTINE)ThreadLoop, 0, 0, 0);
+        }
+    }
 
-	return 1;
+    return 1;
 }

@@ -1,0 +1,40 @@
+#include "winres.h"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,2
+ PRODUCTVERSION 1,0,0,2
+ FILEFLAGSMASK 0x3fL
+#if _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040004b0"
+        BEGIN
+#if _DEBUG
+            VALUE "FileDescription", "DEBUG Adds few functions to Worms Armageddon game"
+#else
+            VALUE "FileDescription", "Adds few functions to Worms Armageddon game"
+#endif
+            VALUE "FileVersion", "1.0.0.2"
+            VALUE "InternalName", "wkPin.dll"
+            VALUE "OriginalFilename", "wkPin.dll"
+            VALUE "ProductName", "wkPin.dll"
+#if _DEBUG
+            VALUE "ProductVersion", "DEBUG"
+#else
+            VALUE "ProductVersion", "1.0.0.2"
+#endif
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x400, 1200
+    END
+END

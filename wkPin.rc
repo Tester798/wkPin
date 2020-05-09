@@ -1,8 +1,8 @@
 #include "winres.h"
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 1,0,0,2
-PRODUCTVERSION 1,0,0,2
+FILEVERSION 1,0,0,3
+PRODUCTVERSION 1,0,0,3
 FILEFLAGSMASK 0x3fL
 #if _DEBUG
 FILEFLAGS 0x1L
@@ -22,14 +22,14 @@ BEGIN
 #else
             VALUE "FileDescription", "Adds few functions to Worms Armageddon game"
 #endif
-            VALUE "FileVersion", "1.0.0.2"
+            VALUE "FileVersion", "1.0.0.3"
             VALUE "InternalName", "wkPin.dll"
             VALUE "OriginalFilename", "wkPin.dll"
             VALUE "ProductName", "wkPin.dll"
 #if _DEBUG
             VALUE "ProductVersion", "DEBUG"
 #else
-            VALUE "ProductVersion", "1.0.0.2"
+            VALUE "ProductVersion", "1.0.0.3"
 #endif
         END
     END

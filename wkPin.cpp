@@ -24,6 +24,7 @@ char SyncPinnedAndOpenedLines[2];
 char PinWeaponMenuEnable[2];
 char PinWeaponMenuAtStart[2];
 char PinWeaponMenuDoNotDim[2];
+char FlashWindowWhenUserJoinsGame[2];
 
 bool hook_was_called = false;
 
@@ -39,6 +40,9 @@ bool old_weapon_cursor_locked = false;
 
 bool* window_show_addr;
 bool* window_show_addr_old;
+
+const char join_messagee[] = "Player joined";
+char* log_message;
 
 
 long GetFileSize(std::string filename)
@@ -59,7 +63,9 @@ BOOL CheckWAVer(void)
     {
         void* Buf = malloc(Size);
         if (Buf == NULL) {
+#if _DEBUG
             std::cout << "Can not allocate memory" << std::endl;
+#endif
             return 0;
         }
         GetFileVersionInfo(WApath, 0, Size, Buf);
@@ -79,6 +85,61 @@ BOOL CheckWAVer(void)
         }
     }
     return 0;
+}
+
+
+__declspec(naked) void WriteLogOnJoinGameHook()
+{
+    __asm {
+        mov log_message, eax
+
+        cmp is_STEAM_exe, 1
+        je steam_proc_start
+        push 0x74B1D0
+        push 0x45098D
+        push 0x5A6B99
+        jmp steam_proc_continue
+
+    steam_proc_start:
+        push 0x74A1C8
+        push 0x45081D
+        push 0x5A61B6
+
+    steam_proc_continue:
+        pushad
+    }
+#if _DEBUG
+    std::cout << "WriteLogOnJoinGameHook called" << std::endl;
+#endif
+    if (strncmp(join_messagee, log_message, sizeof(join_messagee)) == 0) {
+#if _DEBUG
+        std::cout << "join_messagee found" << std::endl;
+#endif
+        __asm {
+            push 0 // 0 = no beep, 2 = beep
+            push proc_exit
+
+            cmp is_STEAM_exe, 1
+            je push_steam_proc
+            push 0x4CBD50
+            ret
+
+        push_steam_proc:
+            push 0x4CB290
+            ret
+        }
+    }
+    else {
+#if _DEBUG
+        std::cout << "join_messagee not found" << std::endl;
+#endif
+    }
+
+    __asm {
+    proc_exit:
+        popad
+        ret
+    }
 }
 
 
@@ -438,7 +499,6 @@ BOOL WINAPI ThreadLoop(HMODULE hModule)
     if (verify_patches(patch_wnd_update_hook, false)
         && verify_patches(patch_wnd_show_hook, false)
         && verify_patches(patch_wnd_hide_hook, false)
-
         && (is_STEAM_exe ? verify_patches(patch_1_weapon_window_always_redraw_STEAM, false) : verify_patches(patch_1_weapon_window_always_redraw, false))
         && (PinWeaponMenuDoNotDim[0] == '1' ? (is_STEAM_exe ? verify_patches(patch_1_weapon_window_do_not_dim_STEAM, false) : verify_patches(patch_1_weapon_window_do_not_dim, false)) : true)
         )
@@ -451,7 +511,9 @@ BOOL WINAPI ThreadLoop(HMODULE hModule)
         apply_patches(patch_wnd_hide_hook, false);
     }
     else {
+#if _DEBUG
         std::cout << "Cannot find original bytes for hooks" << std::endl;
+#endif
         return 1;
     }
 
@@ -533,43 +595,42 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         GetPrivateProfileString("Settings", "PinWeaponMenuEnable", "1", PinWeaponMenuEnable, 2, iniFile);
         GetPrivateProfileString("Settings", "PinWeaponMenuAtStart", "0", PinWeaponMenuAtStart, 2, iniFile);
         GetPrivateProfileString("Settings", "PinWeaponMenuDoNotDim", "0", PinWeaponMenuDoNotDim, 2, iniFile);
+        GetPrivateProfileString("Settings", "FlashWindowWhenUserJoinsGame", "1", FlashWindowWhenUserJoinsGame, 2, iniFile);
 
-        if (GetFileAttributesA(iniFile) == INVALID_FILE_ATTRIBUTES)
-        {
-            WritePrivateProfileString("Settings", "SyncPinnedAndOpenedLines", SyncPinnedAndOpenedLines, iniFile);
-            WritePrivateProfileString("Settings", "PinWeaponMenuEnable", PinWeaponMenuEnable, iniFile);
-            WritePrivateProfileString("Settings", "PinWeaponMenuAtStart", PinWeaponMenuAtStart, iniFile);
-            WritePrivateProfileString("Settings", "PinWeaponMenuDoNotDim", PinWeaponMenuDoNotDim, iniFile);
-        }
-
-
-        // fixing WA bug with resetting pinned chat lines if number of pinned lines is 1
-        std::stringstream tmp;
-        tmp.str("");
-        tmp << std::hex << (LPVOID)_byteswap_ulong((unsigned long)FixZeroPinnedChatLinesHook);
-        std::string hook_proc_push_addr = tmp.str();
-        tmp.str("");
-        tmp << ">wa.exe\n";
-        tmp << (is_STEAM_exe ? "00046EC5" : "00046FD5") << ":8B->68\n";
-        tmp << (is_STEAM_exe ? "00046EC6" : "00046FD6") << ":87->" << hook_proc_push_addr.substr(0, 2) << "\n";
-        tmp << (is_STEAM_exe ? "00046EC7" : "00046FD7") << ":6C->" << hook_proc_push_addr.substr(2, 2) << "\n";
-        tmp << (is_STEAM_exe ? "00046EC8" : "00046FD8") << ":F3->" << hook_proc_push_addr.substr(4, 2) << "\n";
-        tmp << (is_STEAM_exe ? "00046EC9" : "00046FD9") << ":00->" << hook_proc_push_addr.substr(6, 2) << "\n";
-        tmp << (is_STEAM_exe ? "00046ECA" : "00046FDA") << ":00->C3\n";
-        std::vector<patch_info> patch_fix_pinned_lines = read_1337_text(tmp.str());
-        if (verify_patches(patch_fix_pinned_lines, false))
-        {
-#if _DEBUG
-            std::cout << "Bytes for 'patch_fix_pinned_lines' found, applying patch" << std::endl;
-#endif
-            apply_patches(patch_fix_pinned_lines, false);
-        }
-        else {
-            std::cout << "Cannot find original bytes for 'patch_fix_pinned_lines'" << std::endl;
-        }
-
+        WritePrivateProfileString("Settings", "SyncPinnedAndOpenedLines", SyncPinnedAndOpenedLines, iniFile);
+        WritePrivateProfileString("Settings", "PinWeaponMenuEnable", PinWeaponMenuEnable, iniFile);
+        WritePrivateProfileString("Settings", "PinWeaponMenuAtStart", PinWeaponMenuAtStart, iniFile);
+        WritePrivateProfileString("Settings", "PinWeaponMenuDoNotDim", PinWeaponMenuDoNotDim, iniFile);
+        WritePrivateProfileString("Settings", "FlashWindowWhenUserJoinsGame", FlashWindowWhenUserJoinsGame, iniFile);
 
         if (SyncPinnedAndOpenedLines[0] == '1') {
+            // fixing WA bug with resetting pinned chat lines if number of pinned lines is 1
+            std::stringstream tmp;
+            tmp.str("");
+            tmp << std::hex << (LPVOID)_byteswap_ulong((unsigned long)FixZeroPinnedChatLinesHook);
+            std::string hook_proc_push_addr = tmp.str();
+            tmp.str("");
+            tmp << ">wa.exe\n";
+            tmp << (is_STEAM_exe ? "00046EC5" : "00046FD5") << ":8B->68\n";
+            tmp << (is_STEAM_exe ? "00046EC6" : "00046FD6") << ":87->" << hook_proc_push_addr.substr(0, 2) << "\n";
+            tmp << (is_STEAM_exe ? "00046EC7" : "00046FD7") << ":6C->" << hook_proc_push_addr.substr(2, 2) << "\n";
+            tmp << (is_STEAM_exe ? "00046EC8" : "00046FD8") << ":F3->" << hook_proc_push_addr.substr(4, 2) << "\n";
+            tmp << (is_STEAM_exe ? "00046EC9" : "00046FD9") << ":00->" << hook_proc_push_addr.substr(6, 2) << "\n";
+            tmp << (is_STEAM_exe ? "00046ECA" : "00046FDA") << ":00->C3\n";
+            std::vector<patch_info> patch_fix_pinned_lines = read_1337_text(tmp.str());
+            if (verify_patches(patch_fix_pinned_lines, false))
+            {
+#if _DEBUG
+                std::cout << "Bytes for 'patch_fix_pinned_lines' found, applying patch" << std::endl;
+#endif
+                apply_patches(patch_fix_pinned_lines, false);
+            }
+            else {
+#if _DEBUG
+                std::cout << "Cannot find original bytes for 'patch_fix_pinned_lines'" << std::endl;
+#endif
+            }
+
             if (is_STEAM_exe ? verify_patches(patch_2_syncronize_pinned_chat_STEAM, false) : verify_patches(patch_2_syncronize_pinned_chat, false))
             {
 #if _DEBUG
@@ -579,7 +640,37 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 is_STEAM_exe ? apply_patches(patch_2_syncronize_pinned_chat_STEAM, false) : apply_patches(patch_2_syncronize_pinned_chat, false);
             }
             else {
+#if _DEBUG
                 std::cout << "Cannot find original bytes for 'SyncPinnedAndOpenedLines'" << std::endl;
+#endif
+            }
+        }
+
+        if (FlashWindowWhenUserJoinsGame[0] == '1') {
+            // flash window on task bar when new player joins game
+            std::stringstream tmp;
+            tmp.str("");
+            tmp << std::hex << (LPVOID)_byteswap_ulong((unsigned long)WriteLogOnJoinGameHook);
+            std::string hook_proc_push_addr = tmp.str();
+            tmp.str("");
+            tmp << ">wa.exe\n";
+            tmp << (is_STEAM_exe ? "00050814" : "00050984") << ":" << (is_STEAM_exe ? "C8" : "D0") << "->" << hook_proc_push_addr.substr(0, 2) << "\n";
+            tmp << (is_STEAM_exe ? "00050815" : "00050985") << ":" << (is_STEAM_exe ? "A1" : "B1") << "->" << hook_proc_push_addr.substr(2, 2) << "\n";
+            tmp << (is_STEAM_exe ? "00050816" : "00050986") << ":74->" << hook_proc_push_addr.substr(4, 2) << "\n";
+            tmp << (is_STEAM_exe ? "00050817" : "00050987") << ":00->" << hook_proc_push_addr.substr(6, 2) << "\n";
+            tmp << (is_STEAM_exe ? "00050818" : "00050988") << ":E8->C3\n";
+            std::vector<patch_info> patch_flash_window_on_join = read_1337_text(tmp.str());
+            if (verify_patches(patch_flash_window_on_join, false))
+            {
+#if _DEBUG
+                std::cout << "Bytes for 'patch_flash_window_on_join' found, applying patch" << std::endl;
+#endif
+                apply_patches(patch_flash_window_on_join, false);
+            }
+            else {
+#if _DEBUG
+                std::cout << "Cannot find original bytes for 'patch_flash_window_on_join'" << std::endl;
+#endif
             }
         }
 

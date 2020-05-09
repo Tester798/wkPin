@@ -41,7 +41,7 @@ bool old_weapon_cursor_locked = false;
 bool* window_show_addr;
 bool* window_show_addr_old;
 
-const char join_messagee[] = "Player joined";
+const char join_message[] = "Player joined";
 char* log_message;
 
 
@@ -111,9 +111,9 @@ __declspec(naked) void WriteLogOnJoinGameHook()
 #if _DEBUG
     std::cout << "WriteLogOnJoinGameHook called" << std::endl;
 #endif
-    if (strncmp(join_messagee, log_message, sizeof(join_messagee)) == 0) {
+    if (strncmp(join_message, log_message, sizeof(join_message)) == 0) {
 #if _DEBUG
-        std::cout << "join_messagee found" << std::endl;
+        std::cout << "join_message found" << std::endl;
 #endif
         __asm {
             push 0 // 0 = no beep, 2 = beep
@@ -131,7 +131,7 @@ __declspec(naked) void WriteLogOnJoinGameHook()
     }
     else {
 #if _DEBUG
-        std::cout << "join_messagee not found" << std::endl;
+        std::cout << "join_message not found" << std::endl;
 #endif
     }
 

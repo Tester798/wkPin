@@ -21,12 +21,18 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <PreferredToolArchitecture>x86</PreferredToolArchitecture>
+    <LocalDebuggerCommand>D:\Games\Steam\steamapps\common\Worms Armageddon\WA.exe</LocalDebuggerCommand>
+    <LocalDebuggerWorkingDirectory>D:\Games\Steam\steamapps\common\Worms Armageddon</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>    
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <PreferredToolArchitecture>x86</PreferredToolArchitecture>
+    <LocalDebuggerCommand>D:\Games\Steam\steamapps\common\Worms Armageddon\WA.exe</LocalDebuggerCommand>
+    <LocalDebuggerWorkingDirectory>D:\Games\Steam\steamapps\common\Worms Armageddon</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>    
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -46,8 +52,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>copy /y $(OutDir)$(TargetName)$(TargetExt) "d:\Games\Steam\steamapps\common\Worms Armageddon"</Command>
     </PostBuildEvent>
     <ClCompile>
       <DebugInformationFormat>None</DebugInformationFormat>
@@ -85,8 +90,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>copy /y $(OutDir)$(TargetName)$(TargetExt) "d:\Games\Steam\steamapps\common\Worms Armageddon"</Command>
     </PostBuildEvent>
     <Link>
       <AssemblyDebug>true</AssemblyDebug>

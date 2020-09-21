@@ -8,17 +8,9 @@
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
-#define WA_FILE_SIZE       3235840
-#define WA_FILE_SIZE_STEAM 3231744
-#define VV1 3
-#define VV2 7
-#define VV3 2
-#define VV4 1
-#define DLL_NAME "wkPin.dll"
-#define WRONG_VERSION_MESSAGE "The version of your game is not " STR(VV1) "." STR(VV2) "." STR(VV3) "." STR(VV4)
-#define WRONG_FILE_SIZE_MESSAGE "The size of WA.exe is not " STR(WA_FILE_SIZE)
-
-bool is_STEAM_exe = false;
+#define WA_FILE_SIZE 3596288
+const std::string DLL_NAME = "wkPin.dll";
+const std::string ALLOWED_VER = "3.8.0.0";
 
 char SyncPinnedAndOpenedLines[2];
 char PinWeaponMenuEnable[2];
@@ -53,7 +45,7 @@ long GetFileSize(std::string filename)
 }
 
 
-BOOL CheckWAVer(void)
+bool CheckWAVer(char* currentDir)
 {
     char WApath[MAX_PATH];
     DWORD h;
@@ -66,7 +58,7 @@ BOOL CheckWAVer(void)
 #if _DEBUG
             std::cout << "Can not allocate memory" << std::endl;
 #endif
-            return 0;
+            return false;
         }
         GetFileVersionInfo(WApath, 0, Size, Buf);
         VS_FIXEDFILEINFO* Info;
@@ -75,16 +67,33 @@ BOOL CheckWAVer(void)
         {
             if (Info->dwSignature == 0xFEEF04BD)
             {
-                if (HIWORD(Info->dwFileVersionMS) == VV1
-                    && LOWORD(Info->dwFileVersionMS) == VV2
-                    && HIWORD(Info->dwFileVersionLS) == VV3
-                    && LOWORD(Info->dwFileVersionLS) == VV4
-                    )
-                    return 1;
+                long exe_file_size = GetFileSize(currentDir);
+
+                std::stringstream tmp;
+                tmp.str("");
+                tmp << HIWORD(Info->dwFileVersionMS) << "." << LOWORD(Info->dwFileVersionMS) << "." << HIWORD(Info->dwFileVersionLS) << "." << LOWORD(Info->dwFileVersionLS);
+                std::string ver_file = tmp.str();
+#if _DEBUG
+                std::cout << "Detected WA.exe version: " << ver_file << std::endl;
+#endif
+                if (ver_file == ALLOWED_VER) {
+                    if (exe_file_size != WA_FILE_SIZE) {
+#if _DEBUG
+                        MessageBox(0, "The size of WA.exe is not " STR(WA_FILE_SIZE), DLL_NAME.c_str(), MB_OK | MB_ICONERROR);
+#endif
+                        return false;
+                    }
+                    return true;
+                }
+#if _DEBUG
+                tmp.str("");
+                tmp << "The version of WA.exe is not " << ALLOWED_VER;
+                MessageBox(0, tmp.str().data(), DLL_NAME.c_str(), MB_OK | MB_ICONERROR);
+#endif
             }
         }
     }
-    return 0;
+    return false;
 }
 
 
@@ -92,25 +101,12 @@ __declspec(naked) void WriteLogOnJoinGameHook()
 {
     __asm {
         mov log_message, eax
-
-        cmp is_STEAM_exe, 1
-        je steam_proc_start
-        push 0x74B1D0
-        push 0x45098D
-        push 0x5A6B99
-        jmp steam_proc_continue
-
-    steam_proc_start:
-        push 0x74A1C8
-        push 0x45081D
-        push 0x5A61B6
-
-    steam_proc_continue:
         pushad
     }
 #if _DEBUG
     std::cout << "WriteLogOnJoinGameHook called" << std::endl;
 #endif
+
     if (strncmp(join_message, log_message, sizeof(join_message)) == 0) {
 #if _DEBUG
         std::cout << "join_message found" << std::endl;
@@ -119,13 +115,9 @@ __declspec(naked) void WriteLogOnJoinGameHook()
             push 0 // 0 = no beep, 2 = beep
             push proc_exit
 
-            cmp is_STEAM_exe, 1
-            je push_steam_proc
-            push 0x4CBD50
-            ret
-
-        push_steam_proc:
-            push 0x4CB290
+            mov eax, moduleBase
+            add eax, 0xEDCD0
+            push eax
             ret
         }
     }
@@ -138,6 +130,13 @@ __declspec(naked) void WriteLogOnJoinGameHook()
     __asm {
     proc_exit:
         popad
+        push 0xffffffff
+        push 0x3fff
+
+        mov eax, moduleBase
+        add eax, 0x6AB43
+        push eax
+
         ret
     }
 }
@@ -155,19 +154,17 @@ __declspec(naked) void FixZeroPinnedChatLinesHook()
     }
 #endif
     __asm {
-        mov eax, dword ptr ds : [edi + 0xF36C]
-        cmp eax, 0
+        mov ecx, dword ptr ds : [edi + 0xF3AC]
+        cmp ecx, 0
         jne proc_exit
-        inc eax
+        inc ecx
 
     proc_exit:
-        cmp is_STEAM_exe, 1
-        je steam_proc_exit
-        push 0x446FDB
-        ret
+        push ecx
 
-    steam_proc_exit:
-        push 0x446ECB
+        mov ecx, moduleBase
+        add ecx, 0x60e98
+        push ecx
         ret
     }
 }
@@ -214,15 +211,11 @@ __declspec(naked) void WndUpdateHook()
         push ebx
         push esi
         mov esi, ecx
+        push edi
 
-        cmp is_STEAM_exe, 1
-        je steam_exe_ret
-
-        push 0x53BC97
-        ret
-
-    steam_exe_ret:
-        push 0x53B047
+        mov edi, moduleBase
+        add edi, 0x169348
+        push edi
         ret
     }
 }
@@ -245,33 +238,28 @@ __declspec(naked) void WndShowHook()
         jmp exit_cursor_should_not_lock
 
     exit_cursor_should_lock:
-        cmp is_STEAM_exe, 1
-        je steam_exe_ret_1
-
         popad
         cmp dword ptr ds : [esi + 0x1B8] , 0
-        push 0x53BC17
+        mov dword ptr ds : [esi + 0x1DC] , 0x1
+        jge do_jmp
+
+        mov edx, moduleBase
+        add edx, 0x1692D3
+        push edx
         ret
 
-    steam_exe_ret_1:
-        popad
-        cmp dword ptr ds : [esi + 0x1B8] , 0
-        push 0x53AFC7
+    do_jmp:
+        mov edx, moduleBase
+        add edx, 0x1692E8
+        push edx
         ret
 
     exit_cursor_should_not_lock:
-        cmp is_STEAM_exe, 1
-        je steam_exe_ret_2
-
         popad
-        cmp dword ptr ds : [esi + 0x1B8] , 0
-        push 0x53BC42
-        ret
 
-    steam_exe_ret_2:
-        popad
-        cmp dword ptr ds : [esi + 0x1B8] , 0
-        push 0x53AFF2
+        mov edx, moduleBase
+        add edx, 0x1692F2
+        push edx
         ret
     }
 }
@@ -289,16 +277,11 @@ __declspec(naked) void WndHideHook()
     WndShowHideHookProc();
 
     __asm {
-        cmp is_STEAM_exe, 1
-        je steam_exe_ret
-
         popad
-        push 0x53BC86
-        ret
 
-    steam_exe_ret:
-        popad
-        push 0x53B036
+        mov ebx, moduleBase
+        add ebx, 0x169336
+        push ebx
         ret
     }
 }
@@ -309,9 +292,9 @@ void DoWindowPin()
 #if _DEBUG
     std::cout << "pin window" << std::endl;
 #endif
-    is_STEAM_exe ? apply_patches(patch_1_weapon_window_always_redraw_STEAM, false) : apply_patches(patch_1_weapon_window_always_redraw, false);
+    apply_patches(patch_1_weapon_window_always_redraw, false);
     if (PinWeaponMenuDoNotDim[0] == '1') {
-        is_STEAM_exe ? apply_patches(patch_1_weapon_window_do_not_dim_STEAM, false) : apply_patches(patch_1_weapon_window_do_not_dim, false);
+        apply_patches(patch_1_weapon_window_do_not_dim, false);
     }
     weapon_window_pinned = true;
 }
@@ -322,9 +305,9 @@ void DoWindowUnpin()
 #if _DEBUG
     std::cout << "unpin window" << std::endl;
 #endif
-    is_STEAM_exe ? apply_patches(patch_1_weapon_window_always_redraw_STEAM, true) : apply_patches(patch_1_weapon_window_always_redraw, true);
+    apply_patches(patch_1_weapon_window_always_redraw, true);
     if (PinWeaponMenuDoNotDim[0] == '1') {
-        is_STEAM_exe ? apply_patches(patch_1_weapon_window_do_not_dim_STEAM, true) : apply_patches(patch_1_weapon_window_do_not_dim, true);
+        apply_patches(patch_1_weapon_window_do_not_dim, true);
     }
     weapon_window_pinned = false;
 }
@@ -459,12 +442,13 @@ BOOL WINAPI ThreadLoop(HMODULE hModule)
     std::string hook_proc_push_addr = tmp.str();
     tmp.str("");
     tmp << ">wa.exe\n";
-    tmp << (is_STEAM_exe ? "0013B040" : "0013BC90") << ":83->68\n";
-    tmp << (is_STEAM_exe ? "0013B041" : "0013BC91") << ":EC->" << hook_proc_push_addr.substr(0, 2) << "\n";
-    tmp << (is_STEAM_exe ? "0013B042" : "0013BC92") << ":08->" << hook_proc_push_addr.substr(2, 2) << "\n";
-    tmp << (is_STEAM_exe ? "0013B043" : "0013BC93") << ":53->" << hook_proc_push_addr.substr(4, 2) << "\n";
-    tmp << (is_STEAM_exe ? "0013B044" : "0013BC94") << ":56->" << hook_proc_push_addr.substr(6, 2) << "\n";
-    tmp << (is_STEAM_exe ? "0013B045" : "0013BC95") << ":8B->C3\n";
+    tmp << "00169340:83->68\n";
+    tmp << "00169341:EC->" << hook_proc_push_addr.substr(0, 2) << "\n";
+    tmp << "00169342:08->" << hook_proc_push_addr.substr(2, 2) << "\n";
+    tmp << "00169343:53->" << hook_proc_push_addr.substr(4, 2) << "\n";
+    tmp << "00169344:56->" << hook_proc_push_addr.substr(6, 2) << "\n";
+    tmp << "00169345:8B->C3\n";
+    tmp << "00169346:F1->90\n";
     std::vector<patch_info> patch_wnd_update_hook = read_1337_text(tmp.str());
 
 
@@ -473,12 +457,13 @@ BOOL WINAPI ThreadLoop(HMODULE hModule)
     hook_proc_push_addr = tmp.str();
     tmp.str("");
     tmp << ">wa.exe\n";
-    tmp << (is_STEAM_exe ? "0013AFC0" : "0013BC10") << ":83->68\n";
-    tmp << (is_STEAM_exe ? "0013AFC1" : "0013BC11") << ":BE->" << hook_proc_push_addr.substr(0, 2) << "\n";
-    tmp << (is_STEAM_exe ? "0013AFC2" : "0013BC12") << ":B8->" << hook_proc_push_addr.substr(2, 2) << "\n";
-    tmp << (is_STEAM_exe ? "0013AFC3" : "0013BC13") << ":01->" << hook_proc_push_addr.substr(4, 2) << "\n";
-    tmp << (is_STEAM_exe ? "0013AFC4" : "0013BC14") << ":00->" << hook_proc_push_addr.substr(6, 2) << "\n";
-    tmp << (is_STEAM_exe ? "0013AFC5" : "0013BC15") << ":00->C3\n";
+    tmp << "001692C0:83->68\n";
+    tmp << "001692C1:BE->" << hook_proc_push_addr.substr(0, 2) << "\n";
+    tmp << "001692C2:B8->" << hook_proc_push_addr.substr(2, 2) << "\n";
+    tmp << "001692C3:01->" << hook_proc_push_addr.substr(4, 2) << "\n";
+    tmp << "001692C4:00->" << hook_proc_push_addr.substr(6, 2) << "\n";
+    tmp << "001692C5:00->C3\n";
+    tmp << "001692C6:00->90\n";
     std::vector<patch_info> patch_wnd_show_hook = read_1337_text(tmp.str());
 
 
@@ -487,20 +472,20 @@ BOOL WINAPI ThreadLoop(HMODULE hModule)
     hook_proc_push_addr = tmp.str();
     tmp.str("");
     tmp << ">wa.exe\n";
-    tmp << (is_STEAM_exe ? "0013B031" : "0013BC81") << ":C3->68\n";
-    tmp << (is_STEAM_exe ? "0013B032" : "0013BC82") << ":CC->" << hook_proc_push_addr.substr(0, 2) << "\n";
-    tmp << (is_STEAM_exe ? "0013B033" : "0013BC83") << ":CC->" << hook_proc_push_addr.substr(2, 2) << "\n";
-    tmp << (is_STEAM_exe ? "0013B034" : "0013BC84") << ":CC->" << hook_proc_push_addr.substr(4, 2) << "\n";
-    tmp << (is_STEAM_exe ? "0013B035" : "0013BC85") << ":CC->" << hook_proc_push_addr.substr(6, 2) << "\n";
-    tmp << (is_STEAM_exe ? "0013B036" : "0013BC86") << ":CC->C3\n";
+    tmp << "00169331:C3->68\n";
+    tmp << "00169332:CC->" << hook_proc_push_addr.substr(0, 2) << "\n";
+    tmp << "00169333:CC->" << hook_proc_push_addr.substr(2, 2) << "\n";
+    tmp << "00169334:CC->" << hook_proc_push_addr.substr(4, 2) << "\n";
+    tmp << "00169335:CC->" << hook_proc_push_addr.substr(6, 2) << "\n";
+    tmp << "00169336:CC->C3\n";
     std::vector<patch_info> patch_wnd_hide_hook = read_1337_text(tmp.str());
 
 
     if (verify_patches(patch_wnd_update_hook, false)
         && verify_patches(patch_wnd_show_hook, false)
         && verify_patches(patch_wnd_hide_hook, false)
-        && (is_STEAM_exe ? verify_patches(patch_1_weapon_window_always_redraw_STEAM, false) : verify_patches(patch_1_weapon_window_always_redraw, false))
-        && (PinWeaponMenuDoNotDim[0] == '1' ? (is_STEAM_exe ? verify_patches(patch_1_weapon_window_do_not_dim_STEAM, false) : verify_patches(patch_1_weapon_window_do_not_dim, false)) : true)
+        && verify_patches(patch_1_weapon_window_always_redraw, false)
+        && (PinWeaponMenuDoNotDim[0] == '1' ? verify_patches(patch_1_weapon_window_do_not_dim, false) : true)
         )
     {
 #if _DEBUG
@@ -558,6 +543,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         SetConsoleTitle(console_name.c_str());
         system("cls");
         std::cout << "Started" << std::endl;
+        std::cout << "WA.exe moduleBase: " << std::hex << moduleBase << std::endl;
 #endif
 
         char currentDir[MAX_PATH];
@@ -566,26 +552,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
         GetModuleFileName(GetModuleHandle(NULL), currentDir, MAX_PATH);
 
-        if (!CheckWAVer())
+        if (!CheckWAVer(currentDir))
         {
-#if _DEBUG
-            MessageBox(0, WRONG_VERSION_MESSAGE, DLL_NAME, MB_OK | MB_ICONERROR);
-#endif
             return 1;
-        }
-        long exe_file_size = GetFileSize(currentDir);
-        if (exe_file_size != WA_FILE_SIZE && exe_file_size != WA_FILE_SIZE_STEAM)
-        {
-#if _DEBUG
-            MessageBox(0, WRONG_FILE_SIZE_MESSAGE, DLL_NAME, MB_OK | MB_ICONERROR);
-#endif
-            return 1;
-        }
-        if (exe_file_size == WA_FILE_SIZE_STEAM) {
-            is_STEAM_exe = true;
         }
 
-        GetModuleFileName(GetModuleHandle(DLL_NAME), currentDir, MAX_PATH);
+        GetModuleFileName(GetModuleHandle(DLL_NAME.c_str()), currentDir, MAX_PATH);
         pos = strrchr(currentDir, '.');
         strcpy(pos, "");
         strcpy(iniFile, currentDir);
@@ -611,12 +583,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             std::string hook_proc_push_addr = tmp.str();
             tmp.str("");
             tmp << ">wa.exe\n";
-            tmp << (is_STEAM_exe ? "00046EC5" : "00046FD5") << ":8B->68\n";
-            tmp << (is_STEAM_exe ? "00046EC6" : "00046FD6") << ":87->" << hook_proc_push_addr.substr(0, 2) << "\n";
-            tmp << (is_STEAM_exe ? "00046EC7" : "00046FD7") << ":6C->" << hook_proc_push_addr.substr(2, 2) << "\n";
-            tmp << (is_STEAM_exe ? "00046EC8" : "00046FD8") << ":F3->" << hook_proc_push_addr.substr(4, 2) << "\n";
-            tmp << (is_STEAM_exe ? "00046EC9" : "00046FD9") << ":00->" << hook_proc_push_addr.substr(6, 2) << "\n";
-            tmp << (is_STEAM_exe ? "00046ECA" : "00046FDA") << ":00->C3\n";
+            tmp << "00060E91" << ":8B->68\n";
+            tmp << "00060E92" << ":8F->" << hook_proc_push_addr.substr(0, 2) << "\n";
+            tmp << "00060E93" << ":AC->" << hook_proc_push_addr.substr(2, 2) << "\n";
+            tmp << "00060E94" << ":F3->" << hook_proc_push_addr.substr(4, 2) << "\n";
+            tmp << "00060E95" << ":00->" << hook_proc_push_addr.substr(6, 2) << "\n";
+            tmp << "00060E96" << ":00->C3\n";
             std::vector<patch_info> patch_fix_pinned_lines = read_1337_text(tmp.str());
             if (verify_patches(patch_fix_pinned_lines, false))
             {
@@ -631,13 +603,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 #endif
             }
 
-            if (is_STEAM_exe ? verify_patches(patch_2_syncronize_pinned_chat_STEAM, false) : verify_patches(patch_2_syncronize_pinned_chat, false))
+            if (verify_patches(patch_2_syncronize_pinned_chat, false))
             {
 #if _DEBUG
                 std::cout << "Bytes for 'SyncPinnedAndOpenedLines' found, applying patch" << std::endl;
 #endif
 
-                is_STEAM_exe ? apply_patches(patch_2_syncronize_pinned_chat_STEAM, false) : apply_patches(patch_2_syncronize_pinned_chat, false);
+                apply_patches(patch_2_syncronize_pinned_chat, false);
             }
             else {
 #if _DEBUG
@@ -654,11 +626,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             std::string hook_proc_push_addr = tmp.str();
             tmp.str("");
             tmp << ">wa.exe\n";
-            tmp << (is_STEAM_exe ? "00050814" : "00050984") << ":" << (is_STEAM_exe ? "C8" : "D0") << "->" << hook_proc_push_addr.substr(0, 2) << "\n";
-            tmp << (is_STEAM_exe ? "00050815" : "00050985") << ":" << (is_STEAM_exe ? "A1" : "B1") << "->" << hook_proc_push_addr.substr(2, 2) << "\n";
-            tmp << (is_STEAM_exe ? "00050816" : "00050986") << ":74->" << hook_proc_push_addr.substr(4, 2) << "\n";
-            tmp << (is_STEAM_exe ? "00050817" : "00050987") << ":00->" << hook_proc_push_addr.substr(6, 2) << "\n";
-            tmp << (is_STEAM_exe ? "00050818" : "00050988") << ":E8->C3\n";
+            tmp << "0006AB3C:6A->68" << "\n";
+            tmp << "0006AB3D:FF->" << hook_proc_push_addr.substr(0, 2) << "\n";
+            tmp << "0006AB3E:68->" << hook_proc_push_addr.substr(2, 2) << "\n";
+            tmp << "0006AB3F:FF->" << hook_proc_push_addr.substr(4, 2) << "\n";
+            tmp << "0006AB40:3F->" << hook_proc_push_addr.substr(6, 2) << "\n";
+            tmp << "0006AB41:00->C3\n";
+            tmp << "0006AB42:00->90\n";
             std::vector<patch_info> patch_flash_window_on_join = read_1337_text(tmp.str());
             if (verify_patches(patch_flash_window_on_join, false))
             {

@@ -243,23 +243,23 @@ __declspec(naked) void WndShowHook()
         mov dword ptr ds : [esi + 0x1DC] , 0x1
         jge do_jmp
 
-        mov edx, moduleBase
-        add edx, 0x1692D3
-        push edx
+        mov ecx, moduleBase
+        add ecx, 0x1692D3
+        push ecx
         ret
 
     do_jmp:
-        mov edx, moduleBase
-        add edx, 0x1692E8
-        push edx
+        mov ecx, moduleBase
+        add ecx, 0x1692E8
+        push ecx
         ret
 
     exit_cursor_should_not_lock:
         popad
 
-        mov edx, moduleBase
-        add edx, 0x1692F2
-        push edx
+        mov ecx, moduleBase
+        add ecx, 0x1692F2
+        push ecx
         ret
     }
 }
@@ -279,9 +279,9 @@ __declspec(naked) void WndHideHook()
     __asm {
         popad
 
-        mov ebx, moduleBase
-        add ebx, 0x169336
-        push ebx
+        mov eax, moduleBase
+        add eax, 0x169336
+        push eax
         ret
     }
 }

@@ -52,7 +52,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PostBuildEvent>
-      <Command>copy /y $(OutDir)$(TargetName)$(TargetExt) "d:\Games\Steam\steamapps\common\Worms Armageddon"</Command>
+      <Command>copy /y "$(OutDir)$(TargetName)$(TargetExt)" "d:\Games\Steam\steamapps\common\Worms Armageddon"</Command>
     </PostBuildEvent>
     <ClCompile>
       <DebugInformationFormat>None</DebugInformationFormat>
@@ -90,7 +90,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PostBuildEvent>
-      <Command>copy /y $(OutDir)$(TargetName)$(TargetExt) "d:\Games\Steam\steamapps\common\Worms Armageddon"</Command>
+      <Command>copy /y "$(OutDir)$(TargetName)$(TargetExt)" "d:\Games\Steam\steamapps\common\Worms Armageddon"</Command>
     </PostBuildEvent>
     <Link>
       <AssemblyDebug>true</AssemblyDebug>

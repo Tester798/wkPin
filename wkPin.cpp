@@ -8,9 +8,9 @@
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
-#define WA_FILE_SIZE 3596288
+#define WA_FILE_SIZE 3600384
 const std::string DLL_NAME = "wkPin.dll";
-const std::string ALLOWED_VER = "3.8.0.0";
+const std::string ALLOWED_VER = "3.8.1.0";
 
 char SyncPinnedAndOpenedLines[2];
 char PinWeaponMenuEnable[2];
@@ -116,7 +116,7 @@ __declspec(naked) void WriteLogOnJoinGameHook()
             push proc_exit
 
             mov eax, moduleBase
-            add eax, 0xEDCD0
+            add eax, 0xEE010
             push eax
             ret
         }
@@ -134,7 +134,7 @@ __declspec(naked) void WriteLogOnJoinGameHook()
         push 0x3fff
 
         mov eax, moduleBase
-        add eax, 0x6AB43
+        add eax, 0x6AAE3
         push eax
 
         ret
@@ -163,7 +163,7 @@ __declspec(naked) void FixZeroPinnedChatLinesHook()
         push ecx
 
         mov ecx, moduleBase
-        add ecx, 0x60e98
+        add ecx, 0x60F18
         push ecx
         ret
     }
@@ -214,7 +214,7 @@ __declspec(naked) void WndUpdateHook()
         push edi
 
         mov edi, moduleBase
-        add edi, 0x169348
+        add edi, 0x1697B8
         push edi
         ret
     }
@@ -244,13 +244,13 @@ __declspec(naked) void WndShowHook()
         jge do_jmp
 
         mov ecx, moduleBase
-        add ecx, 0x1692D3
+        add ecx, 0x169743
         push ecx
         ret
 
     do_jmp:
         mov ecx, moduleBase
-        add ecx, 0x1692E8
+        add ecx, 0x169758
         push ecx
         ret
 
@@ -258,7 +258,7 @@ __declspec(naked) void WndShowHook()
         popad
 
         mov ecx, moduleBase
-        add ecx, 0x1692F2
+        add ecx, 0x169762
         push ecx
         ret
     }
@@ -280,7 +280,7 @@ __declspec(naked) void WndHideHook()
         popad
 
         mov eax, moduleBase
-        add eax, 0x169336
+        add eax, 0x1697A6
         push eax
         ret
     }
@@ -442,13 +442,13 @@ BOOL WINAPI ThreadLoop(HMODULE hModule)
     std::string hook_proc_push_addr = tmp.str();
     tmp.str("");
     tmp << ">wa.exe\n";
-    tmp << "00169340:83->68\n";
-    tmp << "00169341:EC->" << hook_proc_push_addr.substr(0, 2) << "\n";
-    tmp << "00169342:08->" << hook_proc_push_addr.substr(2, 2) << "\n";
-    tmp << "00169343:53->" << hook_proc_push_addr.substr(4, 2) << "\n";
-    tmp << "00169344:56->" << hook_proc_push_addr.substr(6, 2) << "\n";
-    tmp << "00169345:8B->C3\n";
-    tmp << "00169346:F1->90\n";
+    tmp << "001697B0:83->68\n";
+    tmp << "001697B1:EC->" << hook_proc_push_addr.substr(0, 2) << "\n";
+    tmp << "001697B2:08->" << hook_proc_push_addr.substr(2, 2) << "\n";
+    tmp << "001697B3:53->" << hook_proc_push_addr.substr(4, 2) << "\n";
+    tmp << "001697B4:56->" << hook_proc_push_addr.substr(6, 2) << "\n";
+    tmp << "001697B5:8B->C3\n";
+    tmp << "001697B6:F1->90\n";
     std::vector<patch_info> patch_wnd_update_hook = read_1337_text(tmp.str());
 
 
@@ -457,13 +457,13 @@ BOOL WINAPI ThreadLoop(HMODULE hModule)
     hook_proc_push_addr = tmp.str();
     tmp.str("");
     tmp << ">wa.exe\n";
-    tmp << "001692C0:83->68\n";
-    tmp << "001692C1:BE->" << hook_proc_push_addr.substr(0, 2) << "\n";
-    tmp << "001692C2:B8->" << hook_proc_push_addr.substr(2, 2) << "\n";
-    tmp << "001692C3:01->" << hook_proc_push_addr.substr(4, 2) << "\n";
-    tmp << "001692C4:00->" << hook_proc_push_addr.substr(6, 2) << "\n";
-    tmp << "001692C5:00->C3\n";
-    tmp << "001692C6:00->90\n";
+    tmp << "00169730:83->68\n";
+    tmp << "00169731:BE->" << hook_proc_push_addr.substr(0, 2) << "\n";
+    tmp << "00169732:B8->" << hook_proc_push_addr.substr(2, 2) << "\n";
+    tmp << "00169733:01->" << hook_proc_push_addr.substr(4, 2) << "\n";
+    tmp << "00169734:00->" << hook_proc_push_addr.substr(6, 2) << "\n";
+    tmp << "00169735:00->C3\n";
+    tmp << "00169736:00->90\n";
     std::vector<patch_info> patch_wnd_show_hook = read_1337_text(tmp.str());
 
 
@@ -472,12 +472,12 @@ BOOL WINAPI ThreadLoop(HMODULE hModule)
     hook_proc_push_addr = tmp.str();
     tmp.str("");
     tmp << ">wa.exe\n";
-    tmp << "00169331:C3->68\n";
-    tmp << "00169332:CC->" << hook_proc_push_addr.substr(0, 2) << "\n";
-    tmp << "00169333:CC->" << hook_proc_push_addr.substr(2, 2) << "\n";
-    tmp << "00169334:CC->" << hook_proc_push_addr.substr(4, 2) << "\n";
-    tmp << "00169335:CC->" << hook_proc_push_addr.substr(6, 2) << "\n";
-    tmp << "00169336:CC->C3\n";
+    tmp << "001697A1:C3->68\n";
+    tmp << "001697A2:CC->" << hook_proc_push_addr.substr(0, 2) << "\n";
+    tmp << "001697A3:CC->" << hook_proc_push_addr.substr(2, 2) << "\n";
+    tmp << "001697A4:CC->" << hook_proc_push_addr.substr(4, 2) << "\n";
+    tmp << "001697A5:CC->" << hook_proc_push_addr.substr(6, 2) << "\n";
+    tmp << "001697A6:CC->C3\n";
     std::vector<patch_info> patch_wnd_hide_hook = read_1337_text(tmp.str());
 
 
@@ -583,12 +583,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             std::string hook_proc_push_addr = tmp.str();
             tmp.str("");
             tmp << ">wa.exe\n";
-            tmp << "00060E91" << ":8B->68\n";
-            tmp << "00060E92" << ":8F->" << hook_proc_push_addr.substr(0, 2) << "\n";
-            tmp << "00060E93" << ":AC->" << hook_proc_push_addr.substr(2, 2) << "\n";
-            tmp << "00060E94" << ":F3->" << hook_proc_push_addr.substr(4, 2) << "\n";
-            tmp << "00060E95" << ":00->" << hook_proc_push_addr.substr(6, 2) << "\n";
-            tmp << "00060E96" << ":00->C3\n";
+            tmp << "00060F11" << ":8B->68\n";
+            tmp << "00060F12" << ":8F->" << hook_proc_push_addr.substr(0, 2) << "\n";
+            tmp << "00060F13" << ":AC->" << hook_proc_push_addr.substr(2, 2) << "\n";
+            tmp << "00060F14" << ":F3->" << hook_proc_push_addr.substr(4, 2) << "\n";
+            tmp << "00060F15" << ":00->" << hook_proc_push_addr.substr(6, 2) << "\n";
+            tmp << "00060F16" << ":00->C3\n";
             std::vector<patch_info> patch_fix_pinned_lines = read_1337_text(tmp.str());
             if (verify_patches(patch_fix_pinned_lines, false))
             {
@@ -626,13 +626,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             std::string hook_proc_push_addr = tmp.str();
             tmp.str("");
             tmp << ">wa.exe\n";
-            tmp << "0006AB3C:6A->68" << "\n";
-            tmp << "0006AB3D:FF->" << hook_proc_push_addr.substr(0, 2) << "\n";
-            tmp << "0006AB3E:68->" << hook_proc_push_addr.substr(2, 2) << "\n";
-            tmp << "0006AB3F:FF->" << hook_proc_push_addr.substr(4, 2) << "\n";
-            tmp << "0006AB40:3F->" << hook_proc_push_addr.substr(6, 2) << "\n";
-            tmp << "0006AB41:00->C3\n";
-            tmp << "0006AB42:00->90\n";
+            tmp << "0006AADC:6A->68" << "\n";
+            tmp << "0006AADD:FF->" << hook_proc_push_addr.substr(0, 2) << "\n";
+            tmp << "0006AADE:68->" << hook_proc_push_addr.substr(2, 2) << "\n";
+            tmp << "0006AADF:FF->" << hook_proc_push_addr.substr(4, 2) << "\n";
+            tmp << "0006AAE0:3F->" << hook_proc_push_addr.substr(6, 2) << "\n";
+            tmp << "0006AAE1:00->C3\n";
+            tmp << "0006AAE2:00->90\n";
             std::vector<patch_info> patch_flash_window_on_join = read_1337_text(tmp.str());
             if (verify_patches(patch_flash_window_on_join, false))
             {

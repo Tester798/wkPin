@@ -3,6 +3,34 @@
 #include "patching.h"
 
 
+// allow float timer
+std::vector<patch_info> patch_allow_float_timer = read_1337_text(R"(
+>wa.exe
+0015E8E6:75->EB
+0015E905:74->90
+0015E906:1A->90
+0015EE3E:74->90
+0015EE3F:53->90
+0015EF98:74->90
+0015EF99:5E->90
+0015F013:0F->90
+0015F014:84->90
+0015F015:E6->90
+0015F016:01->90
+0015F017:00->90
+0015F018:00->90
+0015F02E:74->90
+0015F02F:0E->90
+0015F0CB:0F->90
+0015F0CC:84->90
+0015F0CD:DF->90
+0015F0CE:00->90
+0015F0CF:00->90
+0015F0D0:00->90
+0015F2A7:74->90
+0015F2A8:1F->90
+)");
+
 // make weapon window always redraw
 std::vector<patch_info> patch_1_weapon_window_always_redraw = read_1337_text(R"(
 >wa.exe

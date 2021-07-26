@@ -17,6 +17,7 @@ char PinWeaponMenuEnable[2];
 char PinWeaponMenuAtStart[2];
 char PinWeaponMenuDoNotDim[2];
 char FlashWindowWhenUserJoinsGame[2];
+char AllowFloatTimer[2];
 
 bool hook_was_called = false;
 
@@ -568,12 +569,14 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         GetPrivateProfileString("Settings", "PinWeaponMenuAtStart", "0", PinWeaponMenuAtStart, 2, iniFile);
         GetPrivateProfileString("Settings", "PinWeaponMenuDoNotDim", "0", PinWeaponMenuDoNotDim, 2, iniFile);
         GetPrivateProfileString("Settings", "FlashWindowWhenUserJoinsGame", "1", FlashWindowWhenUserJoinsGame, 2, iniFile);
+        GetPrivateProfileString("Settings", "AllowFloatTimer", "0", AllowFloatTimer, 2, iniFile);
 
         WritePrivateProfileString("Settings", "SyncPinnedAndOpenedLines", SyncPinnedAndOpenedLines, iniFile);
         WritePrivateProfileString("Settings", "PinWeaponMenuEnable", PinWeaponMenuEnable, iniFile);
         WritePrivateProfileString("Settings", "PinWeaponMenuAtStart", PinWeaponMenuAtStart, iniFile);
         WritePrivateProfileString("Settings", "PinWeaponMenuDoNotDim", PinWeaponMenuDoNotDim, iniFile);
         WritePrivateProfileString("Settings", "FlashWindowWhenUserJoinsGame", FlashWindowWhenUserJoinsGame, iniFile);
+        WritePrivateProfileString("Settings", "AllowFloatTimer", AllowFloatTimer, iniFile);
 
         if (SyncPinnedAndOpenedLines[0] == '1') {
             // fixing WA bug with resetting pinned chat lines if number of pinned lines is 1
@@ -644,6 +647,22 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             else {
 #if _DEBUG
                 std::cout << "Cannot find original bytes for 'patch_flash_window_on_join'" << std::endl;
+#endif
+            }
+        }
+
+        if (AllowFloatTimer[0] == '1') {
+            // allow to enable float timer after pressing alt + shift + del
+            if (verify_patches(patch_allow_float_timer, false))
+            {
+#if _DEBUG
+                std::cout << "Bytes for 'patch_allow_float_timer' found, applying patch" << std::endl;
+#endif
+                apply_patches(patch_allow_float_timer, false);
+            }
+            else {
+#if _DEBUG
+                std::cout << "Cannot find original bytes for 'patch_allow_float_timer'" << std::endl;
 #endif
             }
         }

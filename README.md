@@ -10,6 +10,7 @@ PinWeaponMenuEnable=1
 PinWeaponMenuAtStart=0
 PinWeaponMenuDoNotDim=0
 FlashWindowWhenUserJoinsGame=1
+AllowFloatTimer=0
 ```
 
 - `SyncPinnedAndOpenedLines` allows to sync size of opened and pinned chat lines for in-game chat
@@ -17,3 +18,4 @@ FlashWindowWhenUserJoinsGame=1
 - `PinWeaponMenuAtStart` automatically pins weapon menu when new game starts
 - `PinWeaponMenuDoNotDim` prevents dimming of weapon menu at end of turn
 - `FlashWindowWhenUserJoinsGame` enables window flashing when user joins hosted game even when you are not a host
+- `AllowFloatTimer` allows to enable float timer (as in replay) after pressing <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>Del</kbd>

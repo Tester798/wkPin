@@ -9,6 +9,8 @@ std::vector<patch_info> patch_allow_float_timer = read_1337_text(R"(
 0015E8E6:75->EB
 0015E905:74->90
 0015E906:1A->90
+0015ED66:74->90
+0015ED67:06->90
 0015EE3E:74->90
 0015EE3F:53->90
 0015EF98:74->90
